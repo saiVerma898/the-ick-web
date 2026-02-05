@@ -59,12 +59,18 @@ export default function TrackOnboardingPage() {
       </div>
 
       {/* Footer Button */}
-      <div className="mx-auto w-full max-w-md">
+      <div className="mx-auto w-full max-w-md space-y-3">
         <Link
           href="/onboarding/loading"
           className="flex w-full items-center justify-center rounded-[2rem] bg-gray-200 py-4 text-lg font-bold text-gray-400 shadow-none transition-colors hover:bg-pink-300 hover:text-white hover:shadow-lg hover:shadow-pink-200"
         >
           Start The Search
+        </Link>
+        <Link
+          href="/onboarding/features"
+          className="block text-center text-sm font-semibold text-gray-500 underline decoration-gray-300 underline-offset-4"
+        >
+          How it works
         </Link>
       </div>
     </div>
