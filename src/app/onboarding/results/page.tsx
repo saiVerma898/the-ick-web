@@ -38,11 +38,9 @@ function PhoneFrame({
 }) {
   return (
     <div
-      className={`relative mx-auto w-full max-w-[300px] overflow-hidden rounded-[40px] border-[8px] border-white bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] ${className}`}
+      className={`relative mx-auto w-full max-w-[300px] overflow-hidden rounded-[40px] border-[8px] border-white bg-[#fff0f5] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] ${className}`}
     >
       <div className="absolute top-0 left-1/2 z-20 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-black" />
-      {/* Pink gradient header section taking up about 40% of height */}
-      <div className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-[#ffaec8] to-[#ffc5d8]" />
       <div className="relative h-full w-full">{children}</div>
     </div>
   );
@@ -56,76 +54,73 @@ export default function ResultsOnboardingPage() {
       {/* Main Content */}
       <div className="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 py-2 sm:gap-8 sm:py-8">
         <PhoneFrame className="aspect-[9/18] w-full max-w-[280px] sm:max-w-[300px]">
-          <div className="relative flex h-full flex-col px-4 pt-8 pb-4">
+          <div className="relative flex h-full flex-col px-4 pt-10 pb-4">
             
-            {/* Phone Internal Header - Logo */}
-            <div className="flex justify-center pb-2">
-               <div className="relative h-10 w-28">
-                 <Image 
-                   src="/logo.png" 
-                   alt="The Ick" 
-                   fill 
-                   className="object-contain drop-shadow-sm"
-                   priority
-                 />
-               </div>
+            {/* Phone Internal Header - Pink Text */}
+            <div className="flex justify-center pb-4">
+               <h3 className="text-2xl font-black tracking-tight text-pink-400">
+                The Ick
+              </h3>
             </div>
 
-            {/* Profile Card - White on Pink */}
-            <div className="relative z-10 rounded-3xl bg-white p-3 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-white shadow-sm">
+            {/* Profile Card - Single Wide Card */}
+            <div className="rounded-[2rem] bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white shadow-sm">
                   <img
                     src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop"
                     alt="Profile"
                     className="h-full w-full object-cover"
                   />
                 </div>
-                <div className="flex flex-1 gap-2">
-                  <div className="flex-1 rounded-2xl bg-blue-50 px-2 py-2 text-center">
-                    <div className="text-[9px] font-medium text-gray-400">
+                
+                {/* Followers */}
+                <div className="flex flex-col items-center rounded-2xl bg-gray-50 px-3 py-2">
+                    <div className="text-[10px] font-medium text-gray-400">
                       Followers
                     </div>
-                    <div className="flex items-center justify-center gap-1 text-sm font-bold text-red-500">
-                      1.2K
-                      <span className="rounded bg-red-100 px-1 py-0.5 text-[8px] text-red-500">-23</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-lg font-bold text-red-500">1.2K</span>
+                      <span className="text-[10px] font-bold text-red-400">-23</span>
                     </div>
-                  </div>
-                  <div className="flex-1 rounded-2xl bg-purple-50 px-2 py-2 text-center">
-                    <div className="text-[9px] font-medium text-gray-400">
+                </div>
+
+                 {/* Following */}
+                <div className="flex flex-col items-center rounded-2xl bg-gray-50 px-3 py-2">
+                    <div className="text-[10px] font-medium text-gray-400">
                       Following
                     </div>
-                    <div className="flex items-center justify-center gap-1 text-sm font-bold text-emerald-500">
-                      512
-                      <span className="rounded bg-emerald-100 px-1 py-0.5 text-[8px] text-emerald-500">+15</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-lg font-bold text-emerald-500">512</span>
+                      <span className="text-[10px] font-bold text-emerald-400">+15</span>
                     </div>
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Recently Followed Big Card Overlay */}
-            <div className="relative z-20 -mt-2 transform">
-                <div className="rounded-[2rem] bg-white p-4 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)]">
-                    <div className="mb-4 text-center text-sm font-bold text-black">
-                        Alex recently followed
-                    </div>
-                    
-                    <div className="space-y-3">
-                        {/* Girls Pill - Tilted Up/Left */}
-                        <div className="flex -rotate-2 transform items-center justify-between rounded-full bg-pink-300 px-4 py-2 text-white shadow-md transition-transform hover:rotate-0">
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-2xl font-black">12</span>
-                                <span className="text-sm font-bold">girls</span>
+            {/* Recently Followed Section */}
+            <div className="mt-6">
+                <div className="mb-3 text-center text-sm font-bold text-black">
+                    Alex recently followed
+                </div>
+                
+                {/* Rotated Container Card */}
+                <div className="-rotate-2 transform rounded-[2rem] bg-white p-3 shadow-lg transition-transform hover:rotate-0">
+                    <div className="space-y-2">
+                        {/* Girls Pill - Pink */}
+                        <div className="flex items-center justify-between rounded-full bg-pink-300 px-4 py-3 text-white shadow-sm">
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-xl font-black">12</span>
+                                <span className="text-sm font-medium opacity-90">girls</span>
                             </div>
                             <AvatarCircles count={4} offset={0} />
                         </div>
 
-                        {/* Guys Pill - Tilted Down/Right */}
-                        <div className="flex rotate-1 transform items-center justify-between rounded-full bg-blue-300 px-4 py-2 text-white shadow-md transition-transform hover:rotate-0">
-                             <div className="flex items-baseline gap-1">
-                                <span className="text-2xl font-black">8</span>
-                                <span className="text-sm font-bold">guys</span>
+                        {/* Guys Pill - Blue */}
+                        <div className="flex items-center justify-between rounded-full bg-blue-300 px-4 py-3 text-white shadow-sm">
+                             <div className="flex items-baseline gap-1.5">
+                                <span className="text-xl font-black">8</span>
+                                <span className="text-sm font-medium opacity-90">guys</span>
                             </div>
                             <AvatarCircles count={4} offset={4} />
                         </div>
@@ -133,28 +128,24 @@ export default function ResultsOnboardingPage() {
                 </div>
             </div>
 
-            {/* List Item - Fading out */}
-            <div className="mt-4 flex-1 overflow-hidden bg-white/50 backdrop-blur-sm">
-                <div className="px-2">
-                    <div className="mb-2 text-xs font-semibold text-gray-500">
-                        Who Alex recently followed
+            {/* List Item */}
+            <div className="mt-6 flex-1">
+                <div className="mb-2 text-xs font-semibold text-gray-400">
+                    Who Alex recently followed
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 overflow-hidden rounded-full">
+                    <img
+                        src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop"
+                        alt="User"
+                        className="h-full w-full object-cover"
+                    />
                     </div>
-                    <div className="flex items-center gap-3 border-b border-gray-100 pb-3 opacity-60">
-                        <div className="h-10 w-10 overflow-hidden rounded-full grayscale">
-                        <img
-                            src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop"
-                            alt="User"
-                            className="h-full w-full object-cover"
-                        />
-                        </div>
-                        <div className="flex-1">
-                        <div className="font-semibold text-gray-700">cindy.crt</div>
-                        <div className="text-xs text-gray-400">Tiktok (+80k)</div>
-                        </div>
-                        <div className="text-xs text-gray-400">2h ago</div>
+                    <div className="flex-1">
+                    <div className="font-bold text-gray-800">cindy.crt</div>
+                    <div className="text-xs text-gray-400">Tiktok (+80k)</div>
                     </div>
-                    {/* Fade gradient */}
-                     <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent" />
+                    <div className="text-xs text-gray-400">2h ago</div>
                 </div>
             </div>
 
