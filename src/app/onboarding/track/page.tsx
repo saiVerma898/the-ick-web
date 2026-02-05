@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function TrackOnboardingPage() {
   return (
@@ -12,7 +13,15 @@ export default function TrackOnboardingPage() {
           >
             <span className="text-xl">←</span>
           </Link>
-          <div className="text-xl font-bold text-pink-300">The Ick</div>
+          <div className="relative h-8 w-24">
+            <Image
+              src="/logo.png"
+              alt="The Ick"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
           <div className="w-10" />
         </div>
       </div>

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import Image from "next/image";
+
 const testimonials = [
   {
     quote:
@@ -53,7 +55,15 @@ export default function TestimonialsOnboardingPage() {
           >
             <span className="text-xl">←</span>
           </Link>
-          <div className="text-xl font-bold text-pink-300">The Ick</div>
+          <div className="relative h-8 w-24">
+            <Image
+              src="/logo.png"
+              alt="The Ick"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
           <div className="w-10" />
         </div>
       </div>

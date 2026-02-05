@@ -55,7 +55,15 @@ export default function ResultsOnboardingPage() {
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/60 backdrop-blur-sm">
             <span className="text-xl">←</span>
           </div>
-          <div className="text-xl font-bold text-pink-400">The Ick</div>
+          <div className="relative h-8 w-24">
+            <Image
+              src="/logo.png"
+              alt="The Ick"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
           <div className="w-10" />
         </div>
       </div>
@@ -65,10 +73,15 @@ export default function ResultsOnboardingPage() {
         <PhoneFrame className="aspect-[9/18]">
           <div className="flex h-full flex-col px-4 pt-12 pb-4">
             {/* Phone Internal Header */}
-            <div className="text-center">
-              <h3 className="text-2xl font-black tracking-tight text-pink-400">
-                The Ick
-              </h3>
+            <div className="flex justify-center pb-4">
+              <div className="relative h-8 w-20">
+                <Image
+                  src="/logo.png"
+                  alt="The Ick"
+                  fill
+                  className="object-contain"
+                />
+              </div>
             </div>
 
             {/* Profile Card */}

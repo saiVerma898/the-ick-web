@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 function PhoneFrame({
   children,
@@ -38,10 +39,16 @@ export default function LoadingOnboardingPage() {
       {/* Pink Overlay Content */}
       <div className="flex w-full max-w-md flex-col items-center gap-10">
         <div className="text-center">
-          <h1 className="text-4xl font-black tracking-tight text-white drop-shadow-md">
-            The Ick
-          </h1>
-          <p className="mt-2 text-lg font-medium text-white/90">
+          <div className="relative mx-auto h-20 w-48">
+            <Image
+              src="/logo.png"
+              alt="The Ick"
+              fill
+              className="object-contain drop-shadow-md"
+              priority
+            />
+          </div>
+          <p className="mt-4 text-lg font-medium text-white/90">
             Alex recently followed
           </p>
         </div>
