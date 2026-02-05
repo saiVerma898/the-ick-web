@@ -51,36 +51,24 @@ function PhoneFrame({
 export default function ResultsOnboardingPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-between bg-gradient-to-b from-[#fff5f8] via-[#fff0f5] to-[#ffe6ef] px-6 py-8">
-      {/* Top Header */}
-      <div className="w-full max-w-md pt-2">
-        <div className="flex items-center justify-between">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/60 backdrop-blur-sm">
-            <span className="text-xl">←</span>
-          </div>
-          {/* Logo in header if user wants it, or text. Sticking to logo for now as requested previously. */}
-          <div className="relative h-8 w-24">
-            <Image
-              src="/logo.png"
-              alt="The Ick"
-              fill
-              className="object-contain"
-              priority
-            />
-          </div>
-          <div className="w-10" />
-        </div>
-      </div>
-
+      {/* Top Header removed as per request */}
+      
       {/* Main Content */}
       <div className="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-8 py-8">
         <PhoneFrame className="aspect-[9/18]">
           <div className="relative flex h-full flex-col px-4 pt-12 pb-4">
             
-            {/* Phone Internal Header - White Text on Pink Background */}
+            {/* Phone Internal Header - Logo */}
             <div className="flex justify-center pb-4">
-               <h3 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">
-                The Ick
-              </h3>
+               <div className="relative h-12 w-32">
+                 <Image 
+                   src="/logo.png" 
+                   alt="The Ick" 
+                   fill 
+                   className="object-contain drop-shadow-sm"
+                   priority
+                 />
+               </div>
             </div>
 
             {/* Profile Card - White on Pink */}
