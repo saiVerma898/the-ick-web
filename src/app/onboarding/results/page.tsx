@@ -1,9 +1,33 @@
 import Link from "next/link";
+import Image from "next/image";
 
-const statCards = [
-  { label: "Followers", value: "1.2K", delta: "-23", tone: "text-rose-500" },
-  { label: "Following", value: "512", delta: "+15", tone: "text-emerald-500" },
-];
+// Placeholder for avatars to avoid hydration mismatches with random generation
+function AvatarCircles({ count, offset = 0 }: { count: number; offset?: number }) {
+  const images = [
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
+    "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop",
+    "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop",
+    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
+  ];
+
+  return (
+    <div className="flex items-center -space-x-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-white ring-1 ring-black/5"
+        >
+          <img
+            src={images[(i + offset) % images.length]}
+            alt="avatar"
+            className="h-full w-full object-cover"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function PhoneFrame({
   children,
@@ -14,79 +38,149 @@ function PhoneFrame({
 }) {
   return (
     <div
-      className={`relative mx-auto w-full max-w-[320px] rounded-[36px] border border-pink-100 bg-white/80 p-4 shadow-[0_25px_60px_-40px_rgba(0,0,0,0.45)] backdrop-blur ${className}`}
+      className={`relative mx-auto w-full max-w-[300px] overflow-hidden rounded-[40px] border-[8px] border-white bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] ${className}`}
     >
-      <div className="mx-auto mb-3 h-6 w-24 rounded-full bg-black/80" />
-      {children}
+      <div className="absolute top-0 left-1/2 z-20 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-black" />
+      <div className="h-full w-full bg-[#ffecf2]">{children}</div>
     </div>
   );
 }
 
 export default function ResultsOnboardingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f8f6f8] via-[#f9f1f5] to-[#f9c8d6] text-[#111111]">
-      <div className="mx-auto flex w-full max-w-md flex-col gap-10 px-5 pb-16 pt-8 sm:max-w-2xl sm:px-8 lg:max-w-4xl">
-        <header className="flex items-center justify-between">
-          <button className="flex h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white shadow-sm">
+    <div className="flex min-h-screen flex-col items-center justify-between bg-gradient-to-b from-[#ffecf2] to-[#ffdce8] px-6 py-8">
+      {/* Top Header */}
+      <div className="w-full max-w-md pt-2">
+        <div className="flex items-center justify-between">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/60 backdrop-blur-sm">
             <span className="text-xl">←</span>
-          </button>
-          <span className="text-lg font-semibold text-pink-300">The Ick</span>
-          <div className="h-11 w-11" />
-        </header>
-
-        <section className="space-y-6">
-          <div className="rounded-[32px] bg-pink-200/60 p-6 text-center text-pink-700">
-            <p className="text-4xl font-semibold">The Ick 🤔</p>
-            <p className="mt-2 text-sm">Alex recently followed</p>
           </div>
-          <PhoneFrame className="bg-white/70">
-            <div className="space-y-4 rounded-3xl bg-white p-4">
-              <div className="flex items-center justify-between rounded-2xl bg-pink-100 px-4 py-3">
-                {statCards.map((card) => (
-                  <div key={card.label} className="flex-1 text-center">
-                    <p className="text-xs text-black/40">{card.label}</p>
-                    <p className={`text-lg font-semibold ${card.tone}`}>
-                      {card.value}
-                      <span className="ml-1 rounded-full bg-black/5 px-2 py-0.5 text-xs text-black/50">
-                        {card.delta}
-                      </span>
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-3xl bg-white p-4 shadow-sm">
-                <p className="text-lg font-semibold">Who Alex recently followed</p>
-                <div className="mt-4 flex items-center justify-between rounded-2xl bg-black/5 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-200 to-purple-200" />
-                    <div>
-                      <p className="font-semibold text-black/60">cindy.crt</p>
-                      <p className="text-xs text-black/40">Tiktok (+80K)</p>
+          <div className="text-xl font-bold text-pink-400">The Ick</div>
+          <div className="w-10" />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-8 py-8">
+        <PhoneFrame className="aspect-[9/18]">
+          <div className="flex h-full flex-col px-4 pt-12 pb-4">
+            {/* Phone Internal Header */}
+            <div className="text-center">
+              <h3 className="text-2xl font-black tracking-tight text-pink-400">
+                The Ick
+              </h3>
+            </div>
+
+            {/* Profile Card */}
+            <div className="mt-6 rounded-3xl bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 overflow-hidden rounded-full bg-gray-200">
+                  <img
+                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop"
+                    alt="Profile"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-1 gap-2">
+                  <div className="flex-1 rounded-2xl bg-blue-50 px-3 py-2 text-center">
+                    <div className="text-[10px] font-medium text-gray-400">
+                      Followers
+                    </div>
+                    <div className="flex items-center justify-center gap-1 text-sm font-bold text-red-500">
+                      1.2K
+                      <span className="text-[10px] text-red-400">-23</span>
                     </div>
                   </div>
-                  <span className="text-xs text-black/40">2 hours ago</span>
+                  <div className="flex-1 rounded-2xl bg-purple-50 px-3 py-2 text-center">
+                    <div className="text-[10px] font-medium text-gray-400">
+                      Following
+                    </div>
+                    <div className="flex items-center justify-center gap-1 text-sm font-bold text-emerald-500">
+                      512
+                      <span className="text-[10px] text-emerald-400">+15</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </PhoneFrame>
-          <div className="text-center">
-            <h1 className="text-2xl font-semibold">
-              See who they just followed recently
-            </h1>
-            <Link
-              href="/onboarding/testimonials"
-              className="mt-4 block w-full rounded-3xl bg-pink-300 py-4 text-lg font-semibold text-white"
-            >
-              Get Started
-            </Link>
-            <p className="mt-3 text-xs text-black/50">
-              By continuing, you accept our{" "}
-              <span className="font-semibold text-black/80">Terms of Use</span>{" "}
-              and{" "}
-              <span className="font-semibold text-black/80">Privacy Policy</span>
-            </p>
+
+            {/* Recently Followed Popover */}
+            <div className="relative mt-6">
+              <div className="mb-2 text-center text-sm font-bold text-black">
+                Alex recently followed
+              </div>
+              <div className="relative z-10 -rotate-2 rounded-3xl bg-white p-2 shadow-xl">
+                {/* Girls Card */}
+                <div className="mb-2 flex items-center justify-between rounded-2xl bg-pink-300 px-4 py-3 text-white">
+                  <div>
+                    <span className="text-2xl font-black">12</span>
+                    <span className="ml-1 text-sm font-medium opacity-90">
+                      girls
+                    </span>
+                  </div>
+                  <AvatarCircles count={4} offset={0} />
+                </div>
+                {/* Guys Card */}
+                <div className="flex items-center justify-between rounded-2xl bg-blue-300 px-4 py-3 text-white">
+                  <div>
+                    <span className="text-2xl font-black">8</span>
+                    <span className="ml-1 text-sm font-medium opacity-90">
+                      guys
+                    </span>
+                  </div>
+                  <AvatarCircles count={4} offset={4} />
+                </div>
+              </div>
+            </div>
+
+            {/* List Item */}
+            <div className="mt-8">
+              <div className="mb-2 text-xs font-semibold text-gray-400">
+                Who Alex recently followed
+              </div>
+              <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                <div className="h-10 w-10 overflow-hidden rounded-full">
+                  <img
+                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop"
+                    alt="User"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-700">cindy.crt</div>
+                  <div className="text-xs text-gray-400">Tiktok (+80k)</div>
+                </div>
+                <div className="text-xs text-gray-400">2h ago</div>
+              </div>
+            </div>
           </div>
-        </section>
+        </PhoneFrame>
+
+        <div className="text-center">
+          <h1 className="max-w-[200px] text-2xl font-bold leading-tight text-gray-900">
+            See who they just followed recently
+          </h1>
+        </div>
+      </div>
+
+      {/* Bottom Action */}
+      <div className="w-full max-w-md space-y-4">
+        <Link
+          href="/onboarding/testimonials"
+          className="flex w-full items-center justify-center rounded-[2rem] bg-pink-300 py-4 text-lg font-bold text-white shadow-lg shadow-pink-200 transition-transform active:scale-95"
+        >
+          Get Started
+        </Link>
+        <div className="px-8 text-center text-[10px] text-gray-400">
+          By continuing, you accept our{" "}
+          <Link href="#" className="font-semibold text-gray-600 underline">
+            Terms of Use
+          </Link>{" "}
+          and{" "}
+          <Link href="#" className="font-semibold text-gray-600 underline">
+            Privacy Policy
+          </Link>
+        </div>
       </div>
     </div>
   );
