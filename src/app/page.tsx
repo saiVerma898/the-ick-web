@@ -2,16 +2,25 @@ import Link from "next/link";
 
 const onboardingLinks = [
   {
+    order: "01",
     title: "Track screen",
     description: "Username input + secure & anonymous message.",
     href: "/onboarding/track",
   },
   {
+    order: "02",
     title: "Testimonials screen",
     description: "Ratings, users, and social proof.",
     href: "/onboarding/testimonials",
   },
   {
+    order: "03",
+    title: "Loading screen",
+    description: "Pink overlay while analysis runs.",
+    href: "/onboarding/loading",
+  },
+  {
+    order: "04",
     title: "Results screen",
     description: "Recent follows and CTA to get started.",
     href: "/onboarding/results",
@@ -42,7 +51,12 @@ export default function Home() {
               href={item.href}
               className="block rounded-3xl border border-black/10 bg-white px-6 py-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             >
-              <h2 className="text-lg font-semibold">{item.title}</h2>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-pink-300">
+                  {item.order}
+                </span>
+                <h2 className="text-lg font-semibold">{item.title}</h2>
+              </div>
               <p className="mt-2 text-sm text-black/60">{item.description}</p>
             </Link>
           ))}
