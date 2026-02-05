@@ -50,17 +50,17 @@ function PhoneFrame({
 
 export default function ResultsOnboardingPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-between bg-gradient-to-b from-[#fff5f8] via-[#fff0f5] to-[#ffe6ef] px-6 py-8">
+    <div className="flex min-h-screen flex-col items-center justify-between bg-gradient-to-b from-[#fff5f8] via-[#fff0f5] to-[#ffe6ef] px-6 py-4 sm:py-8">
       {/* Top Header removed as per request */}
       
       {/* Main Content */}
-      <div className="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-8 py-8">
-        <PhoneFrame className="aspect-[9/18]">
-          <div className="relative flex h-full flex-col px-4 pt-12 pb-4">
+      <div className="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 py-2 sm:gap-8 sm:py-8">
+        <PhoneFrame className="aspect-[9/18] w-full max-w-[280px] sm:max-w-[300px]">
+          <div className="relative flex h-full flex-col px-4 pt-8 pb-4">
             
             {/* Phone Internal Header - Logo */}
-            <div className="flex justify-center pb-4">
-               <div className="relative h-12 w-32">
+            <div className="flex justify-center pb-2">
+               <div className="relative h-10 w-28">
                  <Image 
                    src="/logo.png" 
                    alt="The Ick" 
@@ -162,17 +162,17 @@ export default function ResultsOnboardingPage() {
         </PhoneFrame>
 
         <div className="text-center">
-          <h1 className="max-w-[240px] text-2xl font-bold leading-tight text-gray-900">
+          <h1 className="max-w-[240px] text-xl font-bold leading-tight text-gray-900 sm:text-2xl">
             See who they just followed recently
           </h1>
         </div>
       </div>
 
       {/* Bottom Action */}
-      <div className="w-full max-w-md space-y-4">
+      <div className="w-full max-w-md space-y-3 pb-2">
         <Link
           href="/onboarding/testimonials"
-          className="flex w-full items-center justify-center rounded-[2rem] bg-pink-300 py-4 text-lg font-bold text-white shadow-lg shadow-pink-200 transition-transform active:scale-95"
+          className="flex w-full items-center justify-center rounded-[2rem] bg-pink-300 py-3.5 text-lg font-bold text-white shadow-lg shadow-pink-200 transition-transform active:scale-95 sm:py-4"
         >
           Get Started
         </Link>
