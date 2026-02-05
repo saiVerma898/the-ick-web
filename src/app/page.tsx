@@ -3,9 +3,9 @@ import Link from "next/link";
 const onboardingLinks = [
   {
     order: "01",
-    title: "Track screen",
-    description: "Username input + secure & anonymous message.",
-    href: "/onboarding/track",
+    title: "Get Started screen",
+    description: "Results preview + 'Get Started' CTA.",
+    href: "/onboarding/results",
   },
   {
     order: "02",
@@ -21,9 +21,9 @@ const onboardingLinks = [
   },
   {
     order: "04",
-    title: "Results screen",
-    description: "Recent follows and CTA to get started.",
-    href: "/onboarding/results",
+    title: "Track screen",
+    description: "Username input + secure & anonymous message.",
+    href: "/onboarding/track",
   },
 ];
 

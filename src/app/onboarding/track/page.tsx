@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 function AvatarStack({ count }: { count: number }) {
   return (
     <div className="flex items-center">
@@ -33,9 +35,12 @@ export default function TrackOnboardingPage() {
     <div className="min-h-screen bg-gradient-to-b from-[#f8f6f8] via-[#f9f1f5] to-[#f9c8d6] text-[#111111]">
       <div className="mx-auto flex w-full max-w-md flex-col gap-10 px-5 pb-16 pt-8 sm:max-w-2xl sm:px-8 lg:max-w-5xl">
         <header className="flex items-center justify-between">
-          <button className="flex h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white shadow-sm">
+          <Link
+            href="/onboarding/testimonials"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white shadow-sm"
+          >
             <span className="text-xl">←</span>
-          </button>
+          </Link>
           <span className="text-lg font-semibold text-pink-300">The Ick</span>
           <div className="h-11 w-11" />
         </header>

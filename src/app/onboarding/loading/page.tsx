@@ -1,3 +1,8 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
 function PhoneFrame({
   children,
   className = "",
@@ -16,6 +21,16 @@ function PhoneFrame({
 }
 
 export default function LoadingOnboardingPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.push("/onboarding/track");
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [router]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f7c5d6] via-[#f3bfd1] to-[#f3b6cc] text-[#111111]">
       <div className="mx-auto flex w-full max-w-md flex-col gap-10 px-5 pb-16 pt-8 sm:max-w-2xl sm:px-8 lg:max-w-4xl">

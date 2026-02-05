@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const statCards = [
   { label: "Followers", value: "1.2K", delta: "-23", tone: "text-rose-500" },
   { label: "Following", value: "512", delta: "+15", tone: "text-emerald-500" },
@@ -71,9 +73,12 @@ export default function ResultsOnboardingPage() {
             <h1 className="text-2xl font-semibold">
               See who they just followed recently
             </h1>
-            <button className="mt-4 w-full rounded-3xl bg-pink-300 py-4 text-lg font-semibold text-white">
+            <Link
+              href="/onboarding/testimonials"
+              className="mt-4 block w-full rounded-3xl bg-pink-300 py-4 text-lg font-semibold text-white"
+            >
               Get Started
-            </button>
+            </Link>
             <p className="mt-3 text-xs text-black/50">
               By continuing, you accept our{" "}
               <span className="font-semibold text-black/80">Terms of Use</span>{" "}
