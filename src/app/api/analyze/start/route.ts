@@ -7,7 +7,7 @@ const APIFY_ACTOR = "datadoping~instagram-following-scraper";
  * Completes in < 3 seconds — well within Vercel's 10 s limit.
  *
  * Uses datadoping/instagram-following-scraper which requires:
- *   - username: string  (single Instagram handle)
+ *   - usernames: string[]  (array of Instagram handles)
  *   - max_count: number (>= 50, how many followings to fetch)
  */
 export async function POST(request: Request) {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: username,
+          usernames: [username],
           max_count: 100,
         }),
       }
