@@ -11,7 +11,7 @@ export default function SplashPage() {
   useEffect(() => {
     setMounted(true);
     const timer = setTimeout(() => {
-      router.push("/onboarding/results");
+      router.push("/onboarding/testimonials");
     }, 2500); // 2.5 seconds delay
 
     return () => clearTimeout(timer);

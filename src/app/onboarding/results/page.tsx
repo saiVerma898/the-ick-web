@@ -1,183 +1,458 @@
-import Link from "next/link";
-import Image from "next/image";
+"use client";
 
-// Placeholder for avatars to avoid hydration mismatches with random generation
-function AvatarCircles({ count, offset = 0 }: { count: number; offset?: number }) {
-  const images = [
-    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
-    "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop",
-    "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop",
-    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
-  ];
+import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { analyzeProfile, type AnalysisResult, type FollowProfile } from "@/lib/service";
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup } from "firebase/auth";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+
+const FALLBACK_AVATAR =
+  "https://ui-avatars.com/api/?background=f9a8d4&color=fff&size=300&bold=true&name=";
+
+/** Route Instagram CDN URLs through our server-side proxy to avoid CORS blocks */
+function proxyPic(url: string | undefined | null): string | null {
+  if (!url) return null;
+  // Only proxy external URLs (Instagram CDN etc.)
+  if (url.startsWith("http")) {
+    return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
+/* --------------------------------------------------------------- */
+/*  Profile card component                                          */
+/* --------------------------------------------------------------- */
+function ProfileCard({ profile }: { profile: FollowProfile }) {
+  const [imgError, setImgError] = useState(false);
+
+  const genderColor =
+    profile.gender === "female"
+      ? "bg-pink-100 text-pink-600"
+      : profile.gender === "male"
+      ? "bg-blue-100 text-blue-600"
+      : "";
+
+  const avatarSrc =
+    !imgError && profile.profilePicUrl
+      ? proxyPic(profile.profilePicUrl)
+      : null;
 
   return (
-    <div className="flex items-center -space-x-2">
-      {Array.from({ length: count }).map((_, i) => (
+    <div className="flex items-center gap-3 bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
+      {/* Avatar */}
+      <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 shrink-0">
+        <img
+          src={
+            avatarSrc ||
+            `${FALLBACK_AVATAR}${encodeURIComponent(profile.username)}`
+          }
+          alt={profile.username}
+          className="h-full w-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="font-bold text-gray-900 text-sm truncate">
+            {profile.username}
+          </span>
+          {profile.isVerified && (
+            <svg
+              className="h-4 w-4 shrink-0 text-blue-500"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+            </svg>
+          )}
+        </div>
+        {profile.fullName && (
+          <p className="text-xs text-gray-500 truncate">{profile.fullName}</p>
+        )}
+      </div>
+
+      {/* Gender pill */}
+      {profile.gender !== "unknown" && (
+        <span
+          className={`text-[10px] px-2.5 py-1 rounded-full font-bold shrink-0 ${genderColor}`}
+        >
+          {profile.gender === "female" ? "Girl" : "Guy"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- */
+/*  Loading skeleton                                                */
+/* --------------------------------------------------------------- */
+function Skeleton() {
+  return (
+    <div className="space-y-3 animate-pulse">
+      {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-white ring-1 ring-black/5"
+          className="flex items-center gap-3 bg-white rounded-2xl p-3"
         >
-          <img
-            src={images[(i + offset) % images.length]}
-            alt="avatar"
-            className="h-full w-full object-cover"
-          />
+          <div className="h-12 w-12 rounded-full bg-gray-200 shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-28 bg-gray-200 rounded" />
+            <div className="h-3 w-20 bg-gray-100 rounded" />
+          </div>
         </div>
       ))}
     </div>
   );
 }
 
-function PhoneFrame({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+/* --------------------------------------------------------------- */
+/*  Main content                                                    */
+/* --------------------------------------------------------------- */
+function ResultsContent() {
+  const searchParams = useSearchParams();
+  const username = (searchParams.get("u") || "").trim();
+  const router = useRouter();
+
+  const [data, setData] = useState<AnalysisResult | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isPaid, setIsPaid] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [isSavingSearch, setIsSavingSearch] = useState(false);
+  const [lastSavedKey, setLastSavedKey] = useState<string | null>(null);
+
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [fullName, setFullName] = useState<string | null>(null);
+
+  /* ---------- Redirect if no username ----------------------------- */
+  useEffect(() => {
+    if (!username) router.replace("/onboarding/track");
+  }, [username, router]);
+
+  /* ---------- Fetch profile photo --------------------------------- */
+  useEffect(() => {
+    if (!username) return;
+
+    // Check sessionStorage cache first
+    const cachedPhoto = sessionStorage.getItem(`ick_photo_${username}`);
+    const cachedName = sessionStorage.getItem(`ick_name_${username}`);
+    if (cachedPhoto) setProfilePhoto(cachedPhoto);
+    if (cachedName) setFullName(cachedName);
+
+    if (!cachedPhoto) {
+      fetch(`/api/profile-photo?username=${encodeURIComponent(username)}`)
+        .then((res) => res.json())
+        .then((d) => {
+          if (d.photoUrl) {
+            setProfilePhoto(d.photoUrl);
+            sessionStorage.setItem(`ick_photo_${username}`, d.photoUrl);
+          }
+          if (d.fullName) {
+            setFullName(d.fullName);
+            sessionStorage.setItem(`ick_name_${username}`, d.fullName);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [username]);
+
+  /* ---------- Fetch analysis data (with cache) -------------------- */
+  useEffect(() => {
+    if (!username) return;
+
+    // Check sessionStorage cache
+    const cached = sessionStorage.getItem(`ick_results_${username}`);
+    if (cached) {
+      try {
+        setData(JSON.parse(cached));
+        setIsLoading(false);
+        return;
+      } catch {
+        /* corrupted cache, re-fetch */
+      }
+    }
+
+    setIsLoading(true);
+    setError(false);
+    analyzeProfile(username)
+      .then((result) => {
+        setData(result);
+        sessionStorage.setItem(
+          `ick_results_${username}`,
+          JSON.stringify(result)
+        );
+      })
+      .catch(() => setError(true))
+      .finally(() => setIsLoading(false));
+  }, [username]);
+
+  /* ---------- Firebase auth state --------------------------------- */
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setUserId(null);
+        setIsPaid(false);
+        return;
+      }
+
+      setUserId(user.uid);
+      const userRef = doc(db, "users", user.uid);
+      const snapshot = await getDoc(userRef);
+
+      if (!snapshot.exists()) {
+        await setDoc(
+          userRef,
+          {
+            email: user.email || null,
+            name: user.displayName || null,
+            photoURL: user.photoURL || null,
+            paid: false,
+            createdAt: serverTimestamp(),
+            lastLoginAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+        setIsPaid(false);
+      } else {
+        const userData = snapshot.data();
+        setIsPaid(Boolean(userData?.paid));
+        await updateDoc(userRef, { lastLoginAt: serverTimestamp() });
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  /* ---------- Save search to Firestore ---------------------------- */
+  useEffect(() => {
+    if (!data || !userId) return;
+    const saveKey = `${userId}-${data.username}-${data.recentFollows.total}`;
+    if (lastSavedKey === saveKey || isSavingSearch) return;
+
+    const saveSearch = async () => {
+      setIsSavingSearch(true);
+      try {
+        const searchesRef = collection(db, "users", userId, "searches");
+        await addDoc(searchesRef, {
+          username: data.username,
+          result: data,
+          locked: !isPaid,
+          createdAt: serverTimestamp(),
+        });
+        await updateDoc(doc(db, "users", userId), {
+          lastSearchAt: serverTimestamp(),
+          lastSearchUsername: data.username,
+        });
+        setLastSavedKey(saveKey);
+      } catch {
+        // silent
+      } finally {
+        setIsSavingSearch(false);
+      }
+    };
+
+    saveSearch();
+  }, [data, userId, lastSavedKey, isSavingSearch, isPaid]);
+
+  /* ---------- Derived values -------------------------------------- */
+  const isLocked = !isPaid;
+
+  const girlCount = data?.recentFollows.girls ?? 0;
+  const guyCount = data?.recentFollows.guys ?? 0;
+  const totalCount = data?.recentFollows.total ?? 0;
+  const profiles = data?.recentFollows.profiles ?? [];
+  const previewProfiles = profiles.slice(0, 4);
+
+  /* ---------- Handlers -------------------------------------------- */
+  const handleUnlock = async () => {
+    // Save username so we can redirect back after payment
+    localStorage.setItem("ick_tracking_username", username);
+    setAuthError("");
+    setIsAuthLoading(true);
+    try {
+      if (!auth.currentUser) {
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+      }
+      router.push("/paywall");
+    } catch {
+      setAuthError("Google sign-in failed. Please try again.");
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  if (!username) return null;
+
+  /* ================================================================ */
+  /*  RENDER                                                          */
+  /* ================================================================ */
   return (
-    <div
-      className={`relative mx-auto w-full max-w-[300px] overflow-hidden rounded-[40px] border-[8px] border-white bg-[#fff0f5] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)] ${className}`}
-    >
-      <div className="absolute top-0 left-1/2 z-20 h-6 w-32 -translate-x-1/2 rounded-b-2xl bg-black" />
-      <div className="relative h-full w-full">{children}</div>
+    <div className="flex min-h-screen flex-col bg-gray-50">
+      <div className="px-6 pt-8 pb-4">
+        {/* Header */}
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-extrabold text-gray-900">
+            Analyzing Follows
+          </h1>
+          <p className="text-base text-gray-400 mt-0.5">@{username}</p>
+          {fullName && (
+            <p className="text-sm text-gray-400 mt-0.5">{fullName}</p>
+          )}
+        </div>
+
+        {/* Profile photo */}
+        <div className="mx-auto mb-6">
+          <div className="mx-auto h-28 w-28 rounded-full p-1 bg-pink-100 ring-4 ring-pink-50">
+            <div className="h-full w-full rounded-full overflow-hidden bg-gray-200">
+              <img
+                src={
+                  profilePhoto ||
+                  `${FALLBACK_AVATAR}${encodeURIComponent(username)}`
+                }
+                alt={`@${username}`}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ---- Stats cards (always visible) ---- */}
+      {!isLoading && data && (
+        <div className="px-6 mb-4 flex gap-3">
+          <div className="flex-1 bg-pink-200 rounded-2xl p-3 text-center shadow-sm">
+            <p className="text-3xl font-black text-white">{girlCount}</p>
+            <p className="text-sm font-bold text-white/80 mt-0.5">Girls</p>
+          </div>
+          <div className="flex-1 bg-blue-300 rounded-2xl p-3 text-center shadow-sm">
+            <p className="text-3xl font-black text-white">{guyCount}</p>
+            <p className="text-sm font-bold text-white/80 mt-0.5">Guys</p>
+          </div>
+          <div className="flex-1 bg-gray-200 rounded-2xl p-3 text-center shadow-sm">
+            <p className="text-3xl font-black text-gray-700">{totalCount}</p>
+            <p className="text-sm font-bold text-gray-500 mt-0.5">Total</p>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Section heading ---- */}
+      <div className="px-6 mb-3">
+        <h2 className="text-xl font-bold text-gray-900">Recent follows</h2>
+      </div>
+
+      {/* ---- Main content area ---- */}
+      <div className="flex-1 px-6 pb-32">
+        {/* Loading */}
+        {isLoading && <Skeleton />}
+
+        {/* Error */}
+        {error && !isLoading && (
+          <div className="text-center py-10">
+            <p className="text-gray-500 mb-4">Failed to load results.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-pink-300 text-white rounded-full font-bold"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* ---------- PRE-PAYMENT: preview + locked overlay ---------- */}
+        {!isLoading && data && isLocked && (
+          <div className="relative">
+            {/* First 4 profiles visible */}
+            <div className="space-y-2.5">
+              {previewProfiles.map((p) => (
+                <ProfileCard key={p.username} profile={p} />
+              ))}
+            </div>
+
+            {/* Blurred extra profiles */}
+            {profiles.length > 4 && (
+              <div className="mt-2.5 blur-sm opacity-60 select-none pointer-events-none space-y-2.5">
+                {profiles.slice(4, 7).map((p) => (
+                  <ProfileCard key={p.username} profile={p} />
+                ))}
+              </div>
+            )}
+
+            {/* Lock overlay */}
+            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-gray-50 via-gray-50/95 to-transparent flex items-end justify-center pb-4">
+              <div className="flex items-center gap-2 bg-white px-5 py-2.5 rounded-full shadow-md border border-gray-100">
+                <span className="text-gray-400 text-lg">🔒</span>
+                <span className="text-sm font-semibold text-gray-600">
+                  Pay to see all {totalCount} follows
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---------- POST-PAYMENT: full following list -------------- */}
+        {!isLoading && data && !isLocked && (
+          <div className="space-y-2.5">
+            {profiles.map((p, i) => (
+              <ProfileCard key={`${p.username}-${i}`} profile={p} />
+            ))}
+
+            {profiles.length === 0 && (
+              <p className="text-center text-gray-400 py-10">
+                No followings found.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ---- Bottom CTA (sticky) ---- */}
+      {isLocked && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-50/80 backdrop-blur-md px-6 pb-8 pt-4">
+          <button
+            onClick={handleUnlock}
+            disabled={isAuthLoading}
+            className={`w-full rounded-2xl py-4 text-xl font-bold text-white shadow-lg transition-all ${
+              isAuthLoading
+                ? "bg-pink-200"
+                : "bg-pink-400 active:scale-[0.98] shadow-pink-200"
+            }`}
+          >
+            {isAuthLoading ? "Unlocking..." : "Start Tracking"}
+          </button>
+          {authError && (
+            <p className="text-red-500 text-center mt-2 text-sm">
+              {authError}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
+/* ================================================================== */
+/*  Page wrapper with Suspense                                        */
+/* ================================================================== */
 export default function ResultsOnboardingPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-between bg-gradient-to-b from-[#fff5f8] via-[#fff0f5] to-[#ffe6ef] px-6 py-4 sm:py-8">
-      {/* Top Header removed as per request */}
-      
-      {/* Main Content */}
-      <div className="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 py-2 sm:gap-8 sm:py-8">
-        <PhoneFrame className="aspect-[9/18] w-full max-w-[280px] sm:max-w-[300px]">
-          <div className="relative flex h-full flex-col px-4 pt-10 pb-4">
-            
-            {/* Phone Internal Header - Pink Text */}
-            <div className="flex justify-center pb-4">
-               <h3 className="text-2xl font-black tracking-tight text-pink-400">
-                The Ick
-              </h3>
-            </div>
-
-            {/* Profile Card - Single Wide Card */}
-            <div className="rounded-[2rem] bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-2">
-                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-white shadow-sm">
-                  <img
-                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop"
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                
-                {/* Followers */}
-                <div className="flex flex-col items-center rounded-2xl bg-gray-50 px-3 py-2">
-                    <div className="text-[10px] font-medium text-gray-400">
-                      Followers
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-lg font-bold text-red-500">1.2K</span>
-                      <span className="text-[10px] font-bold text-red-400">-23</span>
-                    </div>
-                </div>
-
-                 {/* Following */}
-                <div className="flex flex-col items-center rounded-2xl bg-gray-50 px-3 py-2">
-                    <div className="text-[10px] font-medium text-gray-400">
-                      Following
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-lg font-bold text-emerald-500">512</span>
-                      <span className="text-[10px] font-bold text-emerald-400">+15</span>
-                    </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recently Followed Section */}
-            <div className="mt-6">
-                <div className="mb-3 text-center text-sm font-bold text-black">
-                    Alex recently followed
-                </div>
-                
-                {/* Rotated Container Card */}
-                <div className="-rotate-2 transform rounded-[2rem] bg-white p-3 shadow-lg transition-transform hover:rotate-0">
-                    <div className="space-y-2">
-                        {/* Girls Pill - Pink */}
-                        <div className="flex items-center justify-between rounded-full bg-pink-300 px-4 py-3 text-white shadow-sm">
-                            <div className="flex items-baseline gap-1.5">
-                                <span className="text-xl font-black">12</span>
-                                <span className="text-sm font-medium opacity-90">girls</span>
-                            </div>
-                            <AvatarCircles count={4} offset={0} />
-                        </div>
-
-                        {/* Guys Pill - Blue */}
-                        <div className="flex items-center justify-between rounded-full bg-blue-300 px-4 py-3 text-white shadow-sm">
-                             <div className="flex items-baseline gap-1.5">
-                                <span className="text-xl font-black">8</span>
-                                <span className="text-sm font-medium opacity-90">guys</span>
-                            </div>
-                            <AvatarCircles count={4} offset={4} />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* List Item */}
-            <div className="mt-6 flex-1">
-                <div className="mb-2 text-xs font-semibold text-gray-400">
-                    Who Alex recently followed
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 overflow-hidden rounded-full">
-                    <img
-                        src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop"
-                        alt="User"
-                        className="h-full w-full object-cover"
-                    />
-                    </div>
-                    <div className="flex-1">
-                    <div className="font-bold text-gray-800">cindy.crt</div>
-                    <div className="text-xs text-gray-400">Tiktok (+80k)</div>
-                    </div>
-                    <div className="text-xs text-gray-400">2h ago</div>
-                </div>
-            </div>
-
-          </div>
-        </PhoneFrame>
-
-        <div className="text-center">
-          <h1 className="max-w-[240px] text-xl font-bold leading-tight text-gray-900 sm:text-2xl">
-            See who they just followed recently
-          </h1>
-        </div>
-      </div>
-
-      {/* Bottom Action */}
-      <div className="w-full max-w-md space-y-3 pb-2">
-        <Link
-          href="/onboarding/testimonials"
-          className="flex w-full items-center justify-center rounded-[2rem] bg-pink-300 py-3.5 text-lg font-bold text-white shadow-lg shadow-pink-200 transition-transform active:scale-95 sm:py-4"
-        >
-          Get Started
-        </Link>
-        <div className="px-8 text-center text-[10px] text-gray-400">
-          By continuing, you accept our{" "}
-          <Link href="#" className="font-semibold text-gray-600 underline">
-            Terms of Use
-          </Link>{" "}
-          and{" "}
-          <Link href="#" className="font-semibold text-gray-600 underline">
-            Privacy Policy
-          </Link>
-        </div>
-      </div>
-    </div>
+    <Suspense fallback={<div className="p-6 text-center">Loading...</div>}>
+      <ResultsContent />
+    </Suspense>
   );
 }

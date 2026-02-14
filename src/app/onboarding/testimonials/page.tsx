@@ -50,7 +50,7 @@ export default function TestimonialsOnboardingPage() {
       <div className="mx-auto w-full max-w-md pt-2">
         <div className="flex items-center justify-between">
           <Link
-            href="/onboarding/results"
+            href="/"
             className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
           >
             <span className="text-xl">←</span>
