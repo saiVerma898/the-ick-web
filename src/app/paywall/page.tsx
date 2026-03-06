@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { trackTikTokEvent } from "@/lib/tiktok-browser";
 
 export default function PaywallPage() {
   const [selectedPlan, setSelectedPlan] = useState<"yearly" | "weekly">("yearly");
@@ -26,6 +27,11 @@ export default function PaywallPage() {
       selectedPlan === "yearly"
         ? process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY
         : process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY;
+    const planValue = selectedPlan === "yearly" ? 44.99 : 11.99;
+    const checkoutEventId =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `checkout_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
     if (!priceId) {
       setCheckoutError("Stripe price ID is not configured.");
@@ -37,13 +43,30 @@ export default function PaywallPage() {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, userId }),
+        body: JSON.stringify({
+          priceId,
+          userId,
+          tiktokEventId: checkoutEventId,
+          value: planValue,
+          currency: "USD",
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data?.url) {
         const message = data?.details || data?.error || "Checkout failed";
         throw new Error(message);
       }
+
+      trackTikTokEvent(
+        "InitiateCheckout",
+        {
+          content_type: "product",
+          value: planValue,
+          currency: "USD",
+        },
+        { event_id: checkoutEventId }
+      );
+
       window.location.href = data.url;
     } catch (error) {
       setCheckoutError((error as Error).message || "Checkout failed.");

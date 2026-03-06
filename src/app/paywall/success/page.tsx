@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { trackTikTokEvent } from "@/lib/tiktok-browser";
 
 function PaywallSuccessContent() {
   const router = useRouter();
@@ -11,6 +12,7 @@ function PaywallSuccessContent() {
   const sessionId = searchParams.get("session_id");
   const [status, setStatus] = useState<"loading" | "paid" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const hasTrackedPaymentRef = useRef(false);
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -21,15 +23,41 @@ function PaywallSuccessContent() {
       }
 
       try {
+        const dedupEventId = `complete_payment_${sessionId}`;
         const res = await fetch("/api/stripe/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId }),
+          body: JSON.stringify({ sessionId, tiktokEventId: dedupEventId }),
         });
         const data = await res.json();
 
         if (!res.ok || data.payment_status !== "paid") {
           throw new Error("Payment not completed.");
+        }
+
+        if (!hasTrackedPaymentRef.current) {
+          const paidValue =
+            typeof data.amount_total === "number"
+              ? data.amount_total / 100
+              : undefined;
+          const paidCurrency =
+            typeof data.currency === "string"
+              ? data.currency.toUpperCase()
+              : "USD";
+          const eventProperties: Record<string, unknown> = {
+            content_type: "product",
+            content_id: sessionId,
+            currency: paidCurrency,
+          };
+
+          if (typeof paidValue === "number" && Number.isFinite(paidValue)) {
+            eventProperties.value = Number(paidValue.toFixed(2));
+          }
+
+          trackTikTokEvent("CompletePayment", eventProperties, {
+            event_id: dedupEventId,
+          });
+          hasTrackedPaymentRef.current = true;
         }
 
         const user = auth.currentUser;

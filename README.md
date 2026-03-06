@@ -13,6 +13,26 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Environment Variables
+
+Create a `.env.local` file in the project root:
+
+```bash
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+STRIPE_SECRET_KEY=sk_live_or_test_key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_or_test_key
+NEXT_PUBLIC_STRIPE_PRICE_YEARLY=price_xxx
+NEXT_PUBLIC_STRIPE_PRICE_WEEKLY=price_xxx
+APIFY_API_TOKEN=your_apify_token
+
+# TikTok Pixel + Events API
+NEXT_PUBLIC_TIKTOK_PIXEL_ID=D6LME7JC77UDVRSEJMU0
+TIKTOK_PIXEL_ID=D6LME7JC77UDVRSEJMU0
+TIKTOK_ACCESS_TOKEN=your_events_api_access_token
+# Optional: send events to TikTok Test Events
+TIKTOK_TEST_EVENT_CODE=optional_test_code
+```
+
 ## Deployment (Vercel)
 
 1. Create a new project in Vercel and import this repo.

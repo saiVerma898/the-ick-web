@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
+import { sendTikTokServerEvent } from "@/lib/tiktok-events";
 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY?.trim();
@@ -14,6 +15,13 @@ export async function POST(request: Request) {
     const body = await request.json();
     const priceId = body?.priceId as string | undefined;
     const userId = body?.userId as string | undefined;
+    const tiktokEventId = body?.tiktokEventId as string | undefined;
+    const value =
+      typeof body?.value === "number" && Number.isFinite(body.value)
+        ? body.value
+        : undefined;
+    const currency =
+      typeof body?.currency === "string" ? body.currency : "USD";
 
     if (!priceId) {
       return NextResponse.json({ error: "priceId is required" }, { status: 400 });
@@ -35,7 +43,27 @@ export async function POST(request: Request) {
       allow_promotion_codes: true,
     });
 
-    return NextResponse.json({ url: session.url });
+    const dedupEventId = tiktokEventId?.trim() || `checkout_${session.id}`;
+
+    try {
+      await sendTikTokServerEvent({
+        event: "InitiateCheckout",
+        eventId: dedupEventId,
+        request,
+        url: `${origin}/paywall`,
+        userId: userId || null,
+        value,
+        currency,
+        properties: {
+          content_type: "product",
+          content_id: priceId,
+        },
+      });
+    } catch (tiktokError) {
+      console.error("TikTok checkout event error:", tiktokError);
+    }
+
+    return NextResponse.json({ url: session.url, sessionId: session.id });
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Unknown error";
