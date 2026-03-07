@@ -28,7 +28,8 @@ export function trackTikTokEvent(
     return;
   }
 
-  window.ttq?.track?.(event, properties, options);
+  const normalizedProperties = normalizeTikTokProperties(properties, options);
+  window.ttq?.track?.(event, normalizedProperties, options);
 }
 
 export function trackTikTokPageView() {
@@ -96,4 +97,90 @@ export function createTikTokEventId(prefix: string) {
   }
 
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+function getNonEmptyString(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function normalizeTikTokProperties(
+  properties: TikTokEventProperties | undefined,
+  options: TikTokEventOptions | undefined
+) {
+  if (!properties) {
+    return properties;
+  }
+
+  const normalized: TikTokEventProperties = { ...properties };
+  const eventIdFallback = getNonEmptyString(options?.event_id);
+  const topLevelContentId = getNonEmptyString(normalized.content_id);
+  const resolvedContentId = topLevelContentId || eventIdFallback;
+
+  if (resolvedContentId) {
+    normalized.content_id = resolvedContentId;
+  }
+
+  if (!resolvedContentId) {
+    return normalized;
+  }
+
+  const rawContents = normalized.contents;
+  const defaultContentType = getNonEmptyString(normalized.content_type);
+  const defaultContentName = getNonEmptyString(normalized.content_name);
+  const defaultQuantity =
+    typeof normalized.quantity === "number" && Number.isFinite(normalized.quantity)
+      ? normalized.quantity
+      : undefined;
+  const defaultCurrency = getNonEmptyString(normalized.currency)?.toUpperCase();
+  const defaultValue =
+    typeof normalized.value === "number" && Number.isFinite(normalized.value)
+      ? Number(normalized.value.toFixed(2))
+      : undefined;
+
+  if (Array.isArray(rawContents)) {
+    normalized.contents = rawContents.map((item) => {
+      const contentItem =
+        item && typeof item === "object"
+          ? { ...(item as Record<string, unknown>) }
+          : {};
+
+      if (!getNonEmptyString(contentItem.content_id)) {
+        contentItem.content_id = resolvedContentId;
+      }
+      if (!getNonEmptyString(contentItem.content_type) && defaultContentType) {
+        contentItem.content_type = defaultContentType;
+      }
+
+      return contentItem;
+    });
+    return normalized;
+  }
+
+  const autoContentItem: Record<string, unknown> = {
+    content_id: resolvedContentId,
+  };
+
+  if (defaultContentType) {
+    autoContentItem.content_type = defaultContentType;
+  }
+  if (defaultContentName) {
+    autoContentItem.content_name = defaultContentName;
+  }
+  if (typeof defaultQuantity === "number") {
+    autoContentItem.quantity = defaultQuantity;
+  }
+  if (defaultCurrency) {
+    autoContentItem.currency = defaultCurrency;
+  }
+  if (typeof defaultValue === "number") {
+    autoContentItem.price = defaultValue;
+  }
+
+  normalized.contents = [autoContentItem];
+  return normalized;
 }

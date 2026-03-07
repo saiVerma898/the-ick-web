@@ -31,16 +31,28 @@ export default function PaywallPage() {
 
     const { url, ttclid, ttp } = getTikTokAttributionContext();
     const viewContentEventId = createTikTokEventId("viewcontent_paywall");
+    const viewContentId =
+      process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY?.trim() || "yearly_plan";
 
     trackTikTokEvent(
       "ViewContent",
       {
         content_type: "product",
-        content_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY || "yearly_plan",
+        content_id: viewContentId,
         content_name: "yearly_subscription",
         quantity: 1,
         value: 44.99,
         currency: "USD",
+        contents: [
+          {
+            content_id: viewContentId,
+            content_type: "product",
+            content_name: "yearly_subscription",
+            quantity: 1,
+            price: 44.99,
+            currency: "USD",
+          },
+        ],
         url,
         ttclid,
         ttp,
@@ -55,10 +67,11 @@ export default function PaywallPage() {
     setCheckoutError("");
     setIsCheckoutLoading(true);
 
-    const priceId =
+    const rawPriceId =
       selectedPlan === "yearly"
         ? process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY
         : process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY;
+    const priceId = rawPriceId?.trim();
     const planValue = selectedPlan === "yearly" ? 44.99 : 11.99;
     const planContentName =
       selectedPlan === "yearly" ? "yearly_subscription" : "weekly_subscription";
@@ -104,6 +117,16 @@ export default function PaywallPage() {
           quantity: 1,
           value: planValue,
           currency: "USD",
+          contents: [
+            {
+              content_id: priceId,
+              content_type: "product",
+              content_name: planContentName,
+              quantity: 1,
+              price: planValue,
+              currency: "USD",
+            },
+          ],
           url,
           ttclid,
           ttp,

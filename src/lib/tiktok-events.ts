@@ -83,6 +83,15 @@ function getQueryParamFromUrl(rawUrl: string | undefined, key: string) {
   }
 }
 
+function getNonEmptyString(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 export async function sendTikTokServerEvent(input: TikTokServerEventInput) {
   const accessToken = process.env.TIKTOK_ACCESS_TOKEN?.trim();
   const pixelId =
@@ -146,11 +155,29 @@ export async function sendTikTokServerEvent(input: TikTokServerEventInput) {
   if (resolvedUrl) {
     properties.url = resolvedUrl;
   }
-  if (
-    typeof properties.content_id !== "string" ||
-    !properties.content_id.trim()
-  ) {
-    properties.content_id = input.eventId;
+  const resolvedContentId =
+    getNonEmptyString(properties.content_id) || input.eventId;
+  properties.content_id = resolvedContentId;
+
+  if (Array.isArray(properties.contents)) {
+    properties.contents = properties.contents.map((item) => {
+      const contentItem =
+        item && typeof item === "object"
+          ? { ...(item as Record<string, unknown>) }
+          : {};
+
+      if (!getNonEmptyString(contentItem.content_id)) {
+        contentItem.content_id = resolvedContentId;
+      }
+      if (
+        !getNonEmptyString(contentItem.content_type) &&
+        getNonEmptyString(properties.content_type)
+      ) {
+        contentItem.content_type = getNonEmptyString(properties.content_type);
+      }
+
+      return contentItem;
+    });
   }
 
   const eventPayload: Record<string, unknown> = {

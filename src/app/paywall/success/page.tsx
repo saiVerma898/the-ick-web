@@ -26,6 +26,7 @@ function PaywallSuccessContent() {
       }
 
       try {
+        const purchaseContentId = sessionId.trim() || "subscription_purchase";
         const dedupEventId = `purchase_${sessionId}`;
         const eventTimeUnix = Math.floor(Date.now() / 1000);
         const { url, ttclid, ttp } = getTikTokAttributionContext();
@@ -58,7 +59,7 @@ function PaywallSuccessContent() {
               : "USD";
           const eventProperties: Record<string, unknown> = {
             content_type: "product",
-            content_id: sessionId,
+            content_id: purchaseContentId,
             content_name:
               typeof data?.metadata?.contentName === "string"
                 ? data.metadata.contentName
@@ -72,6 +73,22 @@ function PaywallSuccessContent() {
           if (typeof paidValue === "number" && Number.isFinite(paidValue)) {
             eventProperties.value = Number(paidValue.toFixed(2));
           }
+          eventProperties.contents = [
+            {
+              content_id: purchaseContentId,
+              content_type: "product",
+              content_name:
+                typeof data?.metadata?.contentName === "string"
+                  ? data.metadata.contentName
+                  : "subscription",
+              quantity: 1,
+              price:
+                typeof paidValue === "number" && Number.isFinite(paidValue)
+                  ? Number(paidValue.toFixed(2))
+                  : undefined,
+              currency: paidCurrency,
+            },
+          ];
 
           trackTikTokEvent("Purchase", eventProperties, {
             event_id: dedupEventId,
