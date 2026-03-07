@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendTikTokServerEvent } from "@/lib/tiktok-events";
 
 const APIFY_ACTOR = "datadoping~instagram-following-scraper";
 
@@ -12,8 +13,24 @@ const APIFY_ACTOR = "datadoping~instagram-following-scraper";
  */
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { username?: string };
+    const body = (await request.json()) as {
+      username?: string;
+      tiktokEventId?: string;
+      ttclid?: string;
+      ttp?: string;
+      url?: string;
+      eventTimeUnix?: number;
+    };
     const username = body.username?.trim();
+    const tiktokEventId = body.tiktokEventId?.trim();
+    const ttclid =
+      typeof body.ttclid === "string" ? body.ttclid.trim() : undefined;
+    const ttp = typeof body.ttp === "string" ? body.ttp.trim() : undefined;
+    const url = typeof body.url === "string" ? body.url.trim() : undefined;
+    const eventTimeUnix =
+      typeof body.eventTimeUnix === "number" && Number.isFinite(body.eventTimeUnix)
+        ? body.eventTimeUnix
+        : undefined;
 
     if (!username) {
       return NextResponse.json({ error: "Missing username" }, { status: 400 });
@@ -25,6 +42,27 @@ export async function POST(request: Request) {
         { error: "APIFY_API_TOKEN not configured" },
         { status: 500 }
       );
+    }
+
+    const searchEventId = tiktokEventId || `search_${Date.now()}_${username}`;
+    try {
+      await sendTikTokServerEvent({
+        event: "Search",
+        eventId: searchEventId,
+        request,
+        eventTimeUnix,
+        url,
+        ttclid: ttclid || null,
+        ttp: ttp || null,
+        properties: {
+          content_type: "profile",
+          content_id: username,
+          content_name: "instagram_profile_search",
+          search_string: username,
+        },
+      });
+    } catch (tiktokError) {
+      console.error("TikTok search event error:", tiktokError);
     }
 
     // Start the actor run (does NOT wait for completion)

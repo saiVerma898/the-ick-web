@@ -3,13 +3,31 @@ import { createHash } from "node:crypto";
 const TIKTOK_EVENTS_API_URL =
   "https://business-api.tiktok.com/open_api/v1.3/event/track/";
 
+type TikTokEventName =
+  | "ViewContent"
+  | "AddToWishlist"
+  | "Search"
+  | "AddPaymentInfo"
+  | "AddToCart"
+  | "InitiateCheckout"
+  | "PlaceAnOrder"
+  | "CompleteRegistration"
+  | "Purchase"
+  | "CompletePayment";
+
 type TikTokServerEventInput = {
-  event: "InitiateCheckout" | "CompletePayment";
+  event: TikTokEventName;
   eventId: string;
   request: Request;
+  eventTimeUnix?: number;
   url?: string;
   userId?: string | null;
   email?: string | null;
+  phone?: string | null;
+  ttclid?: string | null;
+  ttp?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
   value?: number;
   currency?: string;
   properties?: Record<string, unknown>;
@@ -23,6 +41,10 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function normalizePhone(phone: string) {
+  return phone.replace(/[^\d]/g, "");
+}
+
 function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
@@ -31,6 +53,34 @@ function getClientIp(request: Request) {
   }
 
   return request.headers.get("x-real-ip")?.trim();
+}
+
+function getCookieValue(request: Request, key: string) {
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) {
+    return undefined;
+  }
+
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = cookieHeader.match(
+    new RegExp(`(?:^|;\\s*)${escapedKey}=([^;]*)`)
+  );
+
+  return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+}
+
+function getQueryParamFromUrl(rawUrl: string | undefined, key: string) {
+  if (!rawUrl) {
+    return undefined;
+  }
+
+  try {
+    const parsed = new URL(rawUrl);
+    const value = parsed.searchParams.get(key)?.trim();
+    return value || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function sendTikTokServerEvent(input: TikTokServerEventInput) {
@@ -43,23 +93,47 @@ export async function sendTikTokServerEvent(input: TikTokServerEventInput) {
     return;
   }
 
-  const clientIpAddress = getClientIp(input.request);
-  const clientUserAgent = input.request.headers.get("user-agent") || undefined;
+  const requestReferer = input.request.headers.get("referer") || undefined;
+  const resolvedUrl = input.url?.trim() || requestReferer;
+  const clientIpAddress = input.ip?.trim() || getClientIp(input.request);
+  const clientUserAgent =
+    input.userAgent?.trim() ||
+    input.request.headers.get("user-agent") ||
+    undefined;
   const normalizedEmail = input.email ? normalizeEmail(input.email) : undefined;
+  const normalizedPhone = input.phone ? normalizePhone(input.phone) : undefined;
   const externalId = input.userId?.trim();
+  const ttclid =
+    input.ttclid?.trim() ||
+    getQueryParamFromUrl(input.request.url, "ttclid") ||
+    getQueryParamFromUrl(requestReferer, "ttclid") ||
+    getCookieValue(input.request, "ttclid");
+  const ttp =
+    input.ttp?.trim() ||
+    getCookieValue(input.request, "_ttp") ||
+    getCookieValue(input.request, "ttp");
 
   const userPayload: Record<string, unknown> = {};
   if (clientIpAddress) {
-    userPayload.client_ip_address = clientIpAddress;
+    userPayload.ip = clientIpAddress;
   }
   if (clientUserAgent) {
-    userPayload.client_user_agent = clientUserAgent;
+    userPayload.user_agent = clientUserAgent;
   }
   if (normalizedEmail) {
     userPayload.email = hashForTikTok(normalizedEmail);
   }
+  if (normalizedPhone) {
+    userPayload.phone = hashForTikTok(normalizedPhone);
+  }
   if (externalId) {
     userPayload.external_id = hashForTikTok(externalId);
+  }
+  if (ttclid) {
+    userPayload.ttclid = ttclid;
+  }
+  if (ttp) {
+    userPayload.ttp = ttp;
   }
 
   const properties: Record<string, unknown> = { ...input.properties };
@@ -69,11 +143,20 @@ export async function sendTikTokServerEvent(input: TikTokServerEventInput) {
   if (input.currency) {
     properties.currency = input.currency.toUpperCase();
   }
+  if (resolvedUrl) {
+    properties.url = resolvedUrl;
+  }
+  if (
+    typeof properties.content_id !== "string" ||
+    !properties.content_id.trim()
+  ) {
+    properties.content_id = input.eventId;
+  }
 
   const eventPayload: Record<string, unknown> = {
     event: input.event,
     event_id: input.eventId,
-    event_time: Math.floor(Date.now() / 1000),
+    event_time: input.eventTimeUnix || Math.floor(Date.now() / 1000),
   };
 
   if (Object.keys(userPayload).length > 0) {
@@ -82,8 +165,8 @@ export async function sendTikTokServerEvent(input: TikTokServerEventInput) {
   if (Object.keys(properties).length > 0) {
     eventPayload.properties = properties;
   }
-  if (input.url) {
-    eventPayload.page = { url: input.url };
+  if (resolvedUrl) {
+    eventPayload.page = { url: resolvedUrl };
   }
 
   const payload: Record<string, unknown> = {

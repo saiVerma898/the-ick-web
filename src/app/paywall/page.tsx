@@ -1,22 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { trackTikTokEvent } from "@/lib/tiktok-browser";
+import {
+  createTikTokEventId,
+  getTikTokAttributionContext,
+  trackTikTokEvent,
+} from "@/lib/tiktok-browser";
 
 export default function PaywallPage() {
   const [selectedPlan, setSelectedPlan] = useState<"yearly" | "weekly">("yearly");
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const hasTrackedViewContentRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUserId(user?.uid || null);
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (hasTrackedViewContentRef.current) {
+      return;
+    }
+
+    const { url, ttclid, ttp } = getTikTokAttributionContext();
+    const viewContentEventId = createTikTokEventId("viewcontent_paywall");
+
+    trackTikTokEvent(
+      "ViewContent",
+      {
+        content_type: "product",
+        content_id: process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY || "yearly_plan",
+        content_name: "yearly_subscription",
+        quantity: 1,
+        value: 44.99,
+        currency: "USD",
+        url,
+        ttclid,
+        ttp,
+      },
+      { event_id: viewContentEventId }
+    );
+
+    hasTrackedViewContentRef.current = true;
   }, []);
 
   const handleCheckout = async () => {
@@ -28,10 +60,11 @@ export default function PaywallPage() {
         ? process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY
         : process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY;
     const planValue = selectedPlan === "yearly" ? 44.99 : 11.99;
-    const checkoutEventId =
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `checkout_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const planContentName =
+      selectedPlan === "yearly" ? "yearly_subscription" : "weekly_subscription";
+    const checkoutEventId = createTikTokEventId("initiate_checkout");
+    const eventTimeUnix = Math.floor(Date.now() / 1000);
+    const { url, ttclid, ttp } = getTikTokAttributionContext();
 
     if (!priceId) {
       setCheckoutError("Stripe price ID is not configured.");
@@ -49,6 +82,11 @@ export default function PaywallPage() {
           tiktokEventId: checkoutEventId,
           value: planValue,
           currency: "USD",
+          contentName: planContentName,
+          eventTimeUnix,
+          url,
+          ttclid,
+          ttp,
         }),
       });
       const data = await res.json();
@@ -61,8 +99,14 @@ export default function PaywallPage() {
         "InitiateCheckout",
         {
           content_type: "product",
+          content_id: priceId,
+          content_name: planContentName,
+          quantity: 1,
           value: planValue,
           currency: "USD",
+          url,
+          ttclid,
+          ttp,
         },
         { event_id: checkoutEventId }
       );

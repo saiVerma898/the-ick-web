@@ -15,6 +15,16 @@ export async function POST(request: Request) {
     const body = await request.json();
     const sessionId = body?.sessionId as string | undefined;
     const tiktokEventId = body?.tiktokEventId as string | undefined;
+    const ttclid =
+      typeof body?.ttclid === "string" ? body.ttclid.trim() : undefined;
+    const ttp = typeof body?.ttp === "string" ? body.ttp.trim() : undefined;
+    const url = typeof body?.url === "string" ? body.url.trim() : undefined;
+    const eventTimeUnix =
+      typeof body?.eventTimeUnix === "number" &&
+      Number.isFinite(body.eventTimeUnix)
+        ? body.eventTimeUnix
+        : undefined;
+    const webhookConfigured = Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim());
 
     if (!sessionId) {
       return NextResponse.json(
@@ -26,9 +36,9 @@ export async function POST(request: Request) {
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const dedupEventId =
-      tiktokEventId?.trim() || `complete_payment_${session.id}`;
+      tiktokEventId?.trim() || `purchase_${session.id}`;
 
-    if (session.payment_status === "paid") {
+    if (session.payment_status === "paid" && !webhookConfigured) {
       const amountValue =
         typeof session.amount_total === "number"
           ? session.amount_total / 100
@@ -38,21 +48,26 @@ export async function POST(request: Request) {
 
       try {
         await sendTikTokServerEvent({
-          event: "CompletePayment",
+          event: "Purchase",
           eventId: dedupEventId,
           request,
-          url: request.headers.get("referer") || undefined,
+          eventTimeUnix,
+          url: url || request.headers.get("referer") || undefined,
           userId: session.metadata?.userId || null,
           email: session.customer_details?.email || null,
+          ttclid: ttclid || session.metadata?.ttclid || null,
+          ttp: ttp || session.metadata?.ttp || null,
           value: amountValue,
           currency: currencyCode,
           properties: {
             content_type: "product",
             content_id: session.id,
+            content_name: session.metadata?.contentName || "subscription",
+            quantity: 1,
           },
         });
       } catch (tiktokError) {
-        console.error("TikTok payment event error:", tiktokError);
+        console.error("TikTok fallback purchase event error:", tiktokError);
       }
     }
 

@@ -4,7 +4,10 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { trackTikTokEvent } from "@/lib/tiktok-browser";
+import {
+  getTikTokAttributionContext,
+  trackTikTokEvent,
+} from "@/lib/tiktok-browser";
 
 function PaywallSuccessContent() {
   const router = useRouter();
@@ -23,11 +26,20 @@ function PaywallSuccessContent() {
       }
 
       try {
-        const dedupEventId = `complete_payment_${sessionId}`;
+        const dedupEventId = `purchase_${sessionId}`;
+        const eventTimeUnix = Math.floor(Date.now() / 1000);
+        const { url, ttclid, ttp } = getTikTokAttributionContext();
         const res = await fetch("/api/stripe/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, tiktokEventId: dedupEventId }),
+          body: JSON.stringify({
+            sessionId,
+            tiktokEventId: dedupEventId,
+            eventTimeUnix,
+            url,
+            ttclid,
+            ttp,
+          }),
         });
         const data = await res.json();
 
@@ -47,14 +59,21 @@ function PaywallSuccessContent() {
           const eventProperties: Record<string, unknown> = {
             content_type: "product",
             content_id: sessionId,
+            content_name:
+              typeof data?.metadata?.contentName === "string"
+                ? data.metadata.contentName
+                : "subscription",
             currency: paidCurrency,
+            url,
+            ttclid,
+            ttp,
           };
 
           if (typeof paidValue === "number" && Number.isFinite(paidValue)) {
             eventProperties.value = Number(paidValue.toFixed(2));
           }
 
-          trackTikTokEvent("CompletePayment", eventProperties, {
+          trackTikTokEvent("Purchase", eventProperties, {
             event_id: dedupEventId,
           });
           hasTrackedPaymentRef.current = true;

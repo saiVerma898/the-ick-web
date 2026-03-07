@@ -24,17 +24,35 @@ export interface AnalysisResult {
   };
 }
 
+export interface AnalyzeProfileOptions {
+  tiktokEventId?: string;
+  ttclid?: string;
+  ttp?: string;
+  url?: string;
+  eventTimeUnix?: number;
+}
+
 /**
  * Analyze an Instagram profile's followings.
  * Uses the 3-step async flow: start → poll → results.
  * Each step is a short HTTP call (< 10 s) so it works on Vercel Hobby.
  */
-export async function analyzeProfile(username: string): Promise<AnalysisResult> {
+export async function analyzeProfile(
+  username: string,
+  options?: AnalyzeProfileOptions
+): Promise<AnalysisResult> {
   /* --- Step 1: kick off Apify run --- */
   const startRes = await fetch("/api/analyze/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username }),
+    body: JSON.stringify({
+      username,
+      tiktokEventId: options?.tiktokEventId,
+      ttclid: options?.ttclid,
+      ttp: options?.ttp,
+      url: options?.url,
+      eventTimeUnix: options?.eventTimeUnix,
+    }),
   });
 
   if (!startRes.ok) throw new Error("Failed to start analysis");

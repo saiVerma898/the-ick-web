@@ -16,6 +16,17 @@ export async function POST(request: Request) {
     const priceId = body?.priceId as string | undefined;
     const userId = body?.userId as string | undefined;
     const tiktokEventId = body?.tiktokEventId as string | undefined;
+    const contentName =
+      typeof body?.contentName === "string" ? body.contentName.trim() : "";
+    const ttclid =
+      typeof body?.ttclid === "string" ? body.ttclid.trim() : undefined;
+    const ttp = typeof body?.ttp === "string" ? body.ttp.trim() : undefined;
+    const url = typeof body?.url === "string" ? body.url.trim() : undefined;
+    const eventTimeUnix =
+      typeof body?.eventTimeUnix === "number" &&
+      Number.isFinite(body.eventTimeUnix)
+        ? body.eventTimeUnix
+        : undefined;
     const value =
       typeof body?.value === "number" && Number.isFinite(body.value)
         ? body.value
@@ -33,13 +44,26 @@ export async function POST(request: Request) {
       "https://www.theickk.com";
 
     const stripe = getStripe();
+    const metadata: Record<string, string> = { priceId };
+    if (userId?.trim()) {
+      metadata.userId = userId.trim();
+    }
+    if (contentName) {
+      metadata.contentName = contentName;
+    }
+    if (ttclid) {
+      metadata.ttclid = ttclid;
+    }
+    if (ttp) {
+      metadata.ttp = ttp;
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/paywall/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/paywall/cancel`,
-      metadata: userId ? { userId } : undefined,
+      metadata,
       allow_promotion_codes: true,
     });
 
@@ -50,13 +74,18 @@ export async function POST(request: Request) {
         event: "InitiateCheckout",
         eventId: dedupEventId,
         request,
-        url: `${origin}/paywall`,
+        eventTimeUnix,
+        url: url || `${origin}/paywall`,
         userId: userId || null,
+        ttclid: ttclid || null,
+        ttp: ttp || null,
         value,
         currency,
         properties: {
           content_type: "product",
           content_id: priceId,
+          content_name: contentName || "subscription",
+          quantity: 1,
         },
       });
     } catch (tiktokError) {

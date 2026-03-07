@@ -20,6 +20,7 @@ Create a `.env.local` file in the project root:
 ```bash
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 STRIPE_SECRET_KEY=sk_live_or_test_key
+STRIPE_WEBHOOK_SECRET=whsec_xxx
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_or_test_key
 NEXT_PUBLIC_STRIPE_PRICE_YEARLY=price_xxx
 NEXT_PUBLIC_STRIPE_PRICE_WEEKLY=price_xxx
@@ -32,6 +33,17 @@ TIKTOK_ACCESS_TOKEN=your_events_api_access_token
 # Optional: send events to TikTok Test Events
 TIKTOK_TEST_EVENT_CODE=optional_test_code
 ```
+
+## Stripe Webhook Setup
+
+To guarantee server-side `CompletePayment` events even when users close the tab before redirect:
+
+1. In Stripe, create a webhook endpoint:
+   - URL: `https://www.theickk.com/api/stripe/webhook`
+   - Event: `checkout.session.completed`
+2. Copy the endpoint signing secret (`whsec_...`) into:
+   - `STRIPE_WEBHOOK_SECRET` (Vercel + local `.env.local`)
+3. Redeploy after setting the env variable.
 
 ## Deployment (Vercel)
 

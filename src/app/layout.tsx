@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import TikTokPageViewTracker from "@/components/tiktok-pageview-tracker";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -44,6 +45,7 @@ n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.get
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <TikTokPageViewTracker />
         {children}
       </body>
     </html>

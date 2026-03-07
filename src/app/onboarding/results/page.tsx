@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { analyzeProfile, type AnalysisResult, type FollowProfile } from "@/lib/service";
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup } from "firebase/auth";
@@ -15,6 +15,11 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import {
+  createTikTokEventId,
+  getTikTokAttributionContext,
+  trackTikTokEvent,
+} from "@/lib/tiktok-browser";
 
 const FALLBACK_AVATAR =
   "https://ui-avatars.com/api/?background=f9a8d4&color=fff&size=300&bold=true&name=";
@@ -135,6 +140,7 @@ function ResultsContent() {
   const [authError, setAuthError] = useState("");
   const [isSavingSearch, setIsSavingSearch] = useState(false);
   const [lastSavedKey, setLastSavedKey] = useState<string | null>(null);
+  const hasTrackedSearchRef = useRef(false);
 
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
@@ -173,6 +179,10 @@ function ResultsContent() {
 
   /* ---------- Fetch analysis data (with cache) -------------------- */
   useEffect(() => {
+    hasTrackedSearchRef.current = false;
+  }, [username]);
+
+  useEffect(() => {
     if (!username) return;
 
     // Check sessionStorage cache
@@ -189,7 +199,34 @@ function ResultsContent() {
 
     setIsLoading(true);
     setError(false);
-    analyzeProfile(username)
+    const searchEventId = createTikTokEventId("search_profile");
+    const eventTimeUnix = Math.floor(Date.now() / 1000);
+    const { url, ttclid, ttp } = getTikTokAttributionContext();
+
+    if (!hasTrackedSearchRef.current) {
+      trackTikTokEvent(
+        "Search",
+        {
+          content_type: "profile",
+          content_id: username,
+          content_name: "instagram_profile_search",
+          search_string: username,
+          url,
+          ttclid,
+          ttp,
+        },
+        { event_id: searchEventId }
+      );
+      hasTrackedSearchRef.current = true;
+    }
+
+    analyzeProfile(username, {
+      tiktokEventId: searchEventId,
+      ttclid,
+      ttp,
+      url,
+      eventTimeUnix,
+    })
       .then((result) => {
         setData(result);
         sessionStorage.setItem(
