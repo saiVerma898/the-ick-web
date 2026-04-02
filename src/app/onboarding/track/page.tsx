@@ -42,7 +42,7 @@ export default function TrackOnboardingPage() {
           <div className="relative h-8 w-24 logo-expand-in">
             <Image
               src="/whotheyfollow.com-removebg-preview.png"
-              alt="WhoTheyFollow"
+              alt="whotheyfollow.com"
               fill
               className="object-contain"
               priority

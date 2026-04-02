@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const origin =
       request.headers.get("origin") ||
       process.env.NEXT_PUBLIC_SITE_URL ||
-      "https://www.theickk.com";
+      "https://whotheyfollow.com";
 
     const stripe = getStripe();
     const metadata: Record<string, string> = { priceId };

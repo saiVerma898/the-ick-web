@@ -79,7 +79,8 @@ export default function PaywallPage() {
     const eventTimeUnix = Math.floor(Date.now() / 1000);
     const { url, ttclid, ttp } = getTikTokAttributionContext();
     const trackedUsername =
-      localStorage.getItem("ick_tracking_username")?.trim() || undefined;
+      localStorage.getItem("whotheyfollow_tracking_username")?.trim() ||
+      undefined;
 
     if (!priceId) {
       setCheckoutError("Stripe price ID is not configured.");
@@ -157,7 +158,7 @@ export default function PaywallPage() {
       <div className="flex-1 flex flex-col justify-center">
         {/* Title */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-black text-black leading-tight">Unlock The Ick</h1>
+          <h1 className="text-3xl font-black text-black leading-tight">Unlock whotheyfollow.com</h1>
           <h2 className="text-2xl font-black text-pink-300 mt-1">#1 Follow Tracker App</h2>
         </div>
 

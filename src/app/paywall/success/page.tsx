@@ -182,7 +182,7 @@ function PaywallSuccessContent() {
 
         // Auto-redirect to results with the username
         const savedUsername =
-          localStorage.getItem("ick_tracking_username")?.trim() || "";
+          localStorage.getItem("whotheyfollow_tracking_username")?.trim() || "";
         const metadataUsername =
           typeof metadata.trackedUsername === "string"
             ? metadata.trackedUsername.trim()

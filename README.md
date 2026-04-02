@@ -1,6 +1,6 @@
-# The Ick Web App
+# whotheyfollow.com Web App
 
-Mobile-first marketing and onboarding experience for The Ick follow tracker.
+Mobile-first marketing and onboarding experience for the whotheyfollow.com follow tracker.
 
 ## Getting Started
 
@@ -39,7 +39,7 @@ TIKTOK_TEST_EVENT_CODE=optional_test_code
 To guarantee server-side `CompletePayment` events even when users close the tab before redirect:
 
 1. In Stripe, create a webhook endpoint:
-   - URL: `https://www.theickk.com/api/stripe/webhook`
+   - URL: `https://whotheyfollow.com/api/stripe/webhook`
    - Event: `checkout.session.completed`
 2. Copy the endpoint signing secret (`whsec_...`) into:
    - `STRIPE_WEBHOOK_SECRET` (Vercel + local `.env.local`)

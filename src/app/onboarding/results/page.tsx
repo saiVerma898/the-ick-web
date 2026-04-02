@@ -155,8 +155,12 @@ function ResultsContent() {
     if (!username) return;
 
     // Check sessionStorage cache first
-    const cachedPhoto = sessionStorage.getItem(`ick_photo_${username}`);
-    const cachedName = sessionStorage.getItem(`ick_name_${username}`);
+    const cachedPhoto = sessionStorage.getItem(
+      `whotheyfollow_photo_${username}`
+    );
+    const cachedName = sessionStorage.getItem(
+      `whotheyfollow_name_${username}`
+    );
     if (cachedPhoto) setProfilePhoto(cachedPhoto);
     if (cachedName) setFullName(cachedName);
 
@@ -166,11 +170,11 @@ function ResultsContent() {
         .then((d) => {
           if (d.photoUrl) {
             setProfilePhoto(d.photoUrl);
-            sessionStorage.setItem(`ick_photo_${username}`, d.photoUrl);
+            sessionStorage.setItem(`whotheyfollow_photo_${username}`, d.photoUrl);
           }
           if (d.fullName) {
             setFullName(d.fullName);
-            sessionStorage.setItem(`ick_name_${username}`, d.fullName);
+            sessionStorage.setItem(`whotheyfollow_name_${username}`, d.fullName);
           }
         })
         .catch(() => {});
@@ -186,7 +190,7 @@ function ResultsContent() {
     if (!username) return;
 
     // Check sessionStorage cache
-    const cached = sessionStorage.getItem(`ick_results_${username}`);
+    const cached = sessionStorage.getItem(`whotheyfollow_results_${username}`);
     if (cached) {
       try {
         setData(JSON.parse(cached));
@@ -230,7 +234,7 @@ function ResultsContent() {
       .then((result) => {
         setData(result);
         sessionStorage.setItem(
-          `ick_results_${username}`,
+          `whotheyfollow_results_${username}`,
           JSON.stringify(result)
         );
       })
@@ -318,7 +322,7 @@ function ResultsContent() {
   /* ---------- Handlers -------------------------------------------- */
   const handleUnlock = async () => {
     // Save username so we can redirect back after payment
-    localStorage.setItem("ick_tracking_username", username);
+    localStorage.setItem("whotheyfollow_tracking_username", username);
     setAuthError("");
     setIsAuthLoading(true);
     try {

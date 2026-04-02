@@ -25,8 +25,8 @@ export default function SplashPage() {
         }`}
       >
         <Image
-          src="/grok-image-515f0dc2-3515-408e-b7ee-694b7ed4c4d4-removebg-preview.png"
-          alt="The Ick"
+          src="/whotheyfollow.com-removebg-preview.png"
+          alt="whotheyfollow.com"
           fill
           className="object-contain animate-pulse"
           priority

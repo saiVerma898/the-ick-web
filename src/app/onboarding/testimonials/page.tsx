@@ -55,10 +55,10 @@ export default function TestimonialsOnboardingPage() {
           >
             <span className="text-xl">←</span>
           </Link>
-          <div className="relative h-8 w-24 logo-expand-in">
+          <div className="relative h-12 w-36 logo-expand-in">
             <Image
               src="/whotheyfollow.com-removebg-preview.png"
-              alt="WhoTheyFollow"
+              alt="whotheyfollow.com"
               fill
               className="object-contain"
               priority
@@ -80,7 +80,7 @@ export default function TestimonialsOnboardingPage() {
             ⭐⭐⭐⭐⭐
           </div>
           <h1 className="text-3xl font-black leading-tight text-gray-900">
-            The Ick was made for people like you
+            whotheyfollow.com was made for people like you
           </h1>
         </div>
 
@@ -88,7 +88,7 @@ export default function TestimonialsOnboardingPage() {
         <div className="flex items-center justify-center gap-3 rounded-full bg-white/60 p-2 backdrop-blur-sm">
           <AvatarCircles count={3} />
           <span className="text-sm font-semibold text-gray-600">
-            +100K The Ick users
+            +100K whotheyfollow.com users
           </span>
         </div>
 

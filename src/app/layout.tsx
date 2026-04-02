@@ -18,9 +18,9 @@ const tiktokPixelId =
   process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID?.trim() || "D6M71BBC77U5049K1360";
 
 export const metadata: Metadata = {
-  title: "The Ick | Follow Tracker",
+  title: "whotheyfollow.com | Follow Tracker",
   description:
-    "A mobile-first web app experience for tracking Instagram follows with privacy-first messaging.",
+    "whotheyfollow.com is a mobile-first web app for tracking Instagram follows with privacy-first messaging.",
 };
 
 export default function RootLayout({

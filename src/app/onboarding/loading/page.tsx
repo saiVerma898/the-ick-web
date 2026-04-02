@@ -41,13 +41,19 @@ function LoadingContent() {
         if (data.photoUrl) {
           setProfilePhoto(data.photoUrl);
           try {
-            sessionStorage.setItem(`ick_photo_${username}`, data.photoUrl);
+            sessionStorage.setItem(
+              `whotheyfollow_photo_${username}`,
+              data.photoUrl
+            );
           } catch {}
         }
         if (data.fullName) {
           setFullName(data.fullName);
           try {
-            sessionStorage.setItem(`ick_name_${username}`, data.fullName);
+            sessionStorage.setItem(
+              `whotheyfollow_name_${username}`,
+              data.fullName
+            );
           } catch {}
         }
       })
@@ -111,7 +117,7 @@ function LoadingContent() {
         if (!cancelled && !analysisData.error) {
           try {
             sessionStorage.setItem(
-              `ick_results_${username}`,
+              `whotheyfollow_results_${username}`,
               JSON.stringify(analysisData)
             );
           } catch {}
