@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 const tiktokPixelId =
-  process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID?.trim() || "D6LME7JC77UDVRSEJMU0";
+  process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID?.trim() || "D6M71BBC77U5049K1360";
 
 export const metadata: Metadata = {
   title: "The Ick | Follow Tracker",

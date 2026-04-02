@@ -15,6 +15,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const priceId = body?.priceId as string | undefined;
     const userId = body?.userId as string | undefined;
+    const trackedUsername =
+      typeof body?.trackedUsername === "string"
+        ? body.trackedUsername.trim()
+        : "";
     const tiktokEventId = body?.tiktokEventId as string | undefined;
     const contentName =
       typeof body?.contentName === "string" ? body.contentName.trim() : "";
@@ -50,6 +54,9 @@ export async function POST(request: Request) {
     }
     if (contentName) {
       metadata.contentName = contentName;
+    }
+    if (trackedUsername) {
+      metadata.trackedUsername = trackedUsername;
     }
     if (ttclid) {
       metadata.ttclid = ttclid;

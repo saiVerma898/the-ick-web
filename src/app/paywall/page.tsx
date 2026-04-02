@@ -78,6 +78,8 @@ export default function PaywallPage() {
     const checkoutEventId = createTikTokEventId("initiate_checkout");
     const eventTimeUnix = Math.floor(Date.now() / 1000);
     const { url, ttclid, ttp } = getTikTokAttributionContext();
+    const trackedUsername =
+      localStorage.getItem("ick_tracking_username")?.trim() || undefined;
 
     if (!priceId) {
       setCheckoutError("Stripe price ID is not configured.");
@@ -92,6 +94,7 @@ export default function PaywallPage() {
         body: JSON.stringify({
           priceId,
           userId,
+          trackedUsername,
           tiktokEventId: checkoutEventId,
           value: planValue,
           currency: "USD",

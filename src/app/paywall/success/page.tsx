@@ -9,12 +9,83 @@ import {
   trackTikTokEvent,
 } from "@/lib/tiktok-browser";
 
+type StripeSessionResponse = {
+  payment_status?: string;
+  customer_email?: string | null;
+  metadata?: Record<string, unknown>;
+  amount_total?: number | null;
+  currency?: string | null;
+  error?: string;
+  details?: string;
+};
+
+const verifiedSessionCache = new Map<string, StripeSessionResponse>();
+const inFlightSessionChecks = new Map<string, Promise<StripeSessionResponse>>();
+
+async function verifyStripeSession({
+  sessionId,
+  dedupEventId,
+  eventTimeUnix,
+  url,
+  ttclid,
+  ttp,
+}: {
+  sessionId: string;
+  dedupEventId: string;
+  eventTimeUnix: number;
+  url?: string;
+  ttclid?: string;
+  ttp?: string;
+}) {
+  const cached = verifiedSessionCache.get(sessionId);
+  if (cached) {
+    return cached;
+  }
+
+  const existingRequest = inFlightSessionChecks.get(sessionId);
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const requestPromise = (async () => {
+    const res = await fetch("/api/stripe/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        tiktokEventId: dedupEventId,
+        eventTimeUnix,
+        url,
+        ttclid,
+        ttp,
+      }),
+    });
+
+    const data = (await res.json()) as StripeSessionResponse;
+    if (!res.ok) {
+      throw new Error(data.details || data.error || "Could not verify payment.");
+    }
+
+    verifiedSessionCache.set(sessionId, data);
+    return data;
+  })();
+
+  inFlightSessionChecks.set(sessionId, requestPromise);
+
+  try {
+    return await requestPromise;
+  } finally {
+    inFlightSessionChecks.delete(sessionId);
+  }
+}
+
 function PaywallSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [status, setStatus] = useState<"loading" | "paid" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const hasStartedVerificationRef = useRef(false);
   const hasTrackedPaymentRef = useRef(false);
 
   useEffect(() => {
@@ -24,29 +95,37 @@ function PaywallSuccessContent() {
         setErrorMessage("Missing session ID.");
         return;
       }
+      if (hasStartedVerificationRef.current) {
+        return;
+      }
+      hasStartedVerificationRef.current = true;
 
       try {
-        const purchaseContentId = sessionId.trim() || "subscription_purchase";
-        const dedupEventId = `purchase_${sessionId}`;
+        const normalizedSessionId = sessionId.trim();
+        if (!normalizedSessionId) {
+          throw new Error("Missing session ID.");
+        }
+        const purchaseContentId = normalizedSessionId;
+        const dedupEventId = `purchase_${normalizedSessionId}`;
         const eventTimeUnix = Math.floor(Date.now() / 1000);
         const { url, ttclid, ttp } = getTikTokAttributionContext();
-        const res = await fetch("/api/stripe/session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId,
-            tiktokEventId: dedupEventId,
-            eventTimeUnix,
-            url,
-            ttclid,
-            ttp,
-          }),
+        const data = await verifyStripeSession({
+          sessionId: normalizedSessionId,
+          dedupEventId,
+          eventTimeUnix,
+          url,
+          ttclid,
+          ttp,
         });
-        const data = await res.json();
-
-        if (!res.ok || data.payment_status !== "paid") {
+        if (data.payment_status !== "paid") {
           throw new Error("Payment not completed.");
         }
+
+        const metadata = data.metadata || {};
+        const contentName =
+          typeof metadata.contentName === "string"
+            ? metadata.contentName
+            : "subscription";
 
         if (!hasTrackedPaymentRef.current) {
           const paidValue =
@@ -60,10 +139,7 @@ function PaywallSuccessContent() {
           const eventProperties: Record<string, unknown> = {
             content_type: "product",
             content_id: purchaseContentId,
-            content_name:
-              typeof data?.metadata?.contentName === "string"
-                ? data.metadata.contentName
-                : "subscription",
+            content_name: contentName,
             currency: paidCurrency,
             url,
             ttclid,
@@ -77,10 +153,7 @@ function PaywallSuccessContent() {
             {
               content_id: purchaseContentId,
               content_type: "product",
-              content_name:
-                typeof data?.metadata?.contentName === "string"
-                  ? data.metadata.contentName
-                  : "subscription",
+              content_name: contentName,
               quantity: 1,
               price:
                 typeof paidValue === "number" && Number.isFinite(paidValue)
@@ -108,11 +181,17 @@ function PaywallSuccessContent() {
         setStatus("paid");
 
         // Auto-redirect to results with the username
-        const savedUsername = localStorage.getItem("ick_tracking_username") || "";
+        const savedUsername =
+          localStorage.getItem("ick_tracking_username")?.trim() || "";
+        const metadataUsername =
+          typeof metadata.trackedUsername === "string"
+            ? metadata.trackedUsername.trim()
+            : "";
+        const redirectUsername = savedUsername || metadataUsername;
         setTimeout(() => {
-          if (savedUsername) {
+          if (redirectUsername) {
             router.push(
-              `/onboarding/results?u=${encodeURIComponent(savedUsername)}`
+              `/onboarding/results?u=${encodeURIComponent(redirectUsername)}`
             );
           } else {
             router.push("/onboarding/track");

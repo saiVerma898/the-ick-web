@@ -55,10 +55,10 @@ export default function TestimonialsOnboardingPage() {
           >
             <span className="text-xl">←</span>
           </Link>
-          <div className="relative h-8 w-24">
+          <div className="relative h-8 w-24 logo-expand-in">
             <Image
-              src="/logo.png"
-              alt="The Ick"
+              src="/whotheyfollow.com-removebg-preview.png"
+              alt="WhoTheyFollow"
               fill
               className="object-contain"
               priority
